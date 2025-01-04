@@ -13,9 +13,9 @@ import StratifiedKFolds
 start_time = time.time()
 assignment_data_path = f"{pathlib.Path().resolve()}\\makaleler-yazarlar"
 create_tf_idf_table_to_path = f"{pathlib.Path().resolve()}\\TF_IDF_Table.csv"
-create_tf_idf_table = False # If you want to recreate the tf idf table, make it True
+create_tf_idf_table = True # If you want to recreate the tf idf table, make it True
 
-use_nltk = True # To use BPE make this False
+use_nltk = False # To use BPE make this False
 use_files = True
 file_recreate = True
 
@@ -128,7 +128,10 @@ for i in tqdm(range(knn_k), desc="Evaluating k-NN for different k values"):
     print(f"Cosine Similarity | K: {k}, Duration: {duration_cs:.2f}s")
 
     results_table_cs = create_results_table(sk_results_cs)
-    results_table_cs.to_csv(f"Result_Table_NLTK_Cs_K_{k}.csv", index=False)
+    if use_nltk:
+        results_table_cs.to_csv(f"Result_Table_NLTK_Cs_K_{k}.csv", index=False)
+    else:
+        results_table_cs.to_csv(f"Result_Table_BPE_CS_K_{k}.csv", index=False)
 
     # Euclidean Distance
     start_time = time.time()
@@ -139,7 +142,10 @@ for i in tqdm(range(knn_k), desc="Evaluating k-NN for different k values"):
     print(f"Euclidean Distance | K: {k}, Duration: {duration_euc:.2f}s")
 
     results_table_euc = create_results_table(sk_results_euc)
-    results_table_euc.to_csv(f"Result_Table_NLTK_Euc_K_{k}.csv", index=False)
+    if use_nltk:
+        results_table_euc.to_csv(f"Result_Table_NLTK_Euc_K_{k}.csv", index=False)
+    else:
+        results_table_euc.to_csv(f"Result_Table_BPE_Euc_K_{k}.csv", index=False)
 
 # for i in range(knn_k):
 #     sk_results = SK_Folder.stratified_cross_validation_parallel(folds=folds, k=i+1, knn_function = knn.classify_with_cs)

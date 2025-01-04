@@ -77,7 +77,7 @@ class TF_IDF:
         self.tf_idf_table = {}
 
     def initialize_documents(self):
-        # to keep tract of the document names, commented out due to some performance hits with stratified k-folds algorithm
+        # to keep track of the document names, commented out due to some performance hits with stratified k-folds algorithm
         # directory_names = os.listdir(self.data_path)
         # for directory_name in directory_names:
         #     file_names = os.listdir(os.path.join(self.data_path, directory_name))

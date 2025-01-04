@@ -18,7 +18,6 @@ def classify_with_cs(n: int, data: DataFrame, test_sample: Series, use_numpy: bo
         key     termA termB termC ...
         newDoc  0.003 0.013 0.023 ...
     """
-    start_time = time.time()
     distances = []  # docName, distance, class
     doc_ids = data['Doc'].to_numpy()
     classes = data['class'].to_numpy()
