@@ -8,12 +8,10 @@ import torch.nn as nn
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 import transformers
-from transformers import AutoModel, BertTokenizerFast
+from transformers import AutoModel, BertTokenizerFast, AdamW
 from torch_directml import device as dml_device
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
 from sklearn.utils.class_weight import compute_class_weight
-from transformers import AdamW
-import matplotlib
 
 # specify GPU
 device = dml_device()
