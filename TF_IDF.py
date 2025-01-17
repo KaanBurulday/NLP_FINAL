@@ -54,7 +54,9 @@ def sanitizer_string(text: str | list[str], stop_words: list[str], only_alpha: b
 
 class TF_IDF:
     def __init__(self, **kwargs):
-        self.data_path = kwargs.get("data_path", f"{pathlib.Path().resolve()}\\raw_texts")
+        self.data_path = kwargs.get("data_path", None)
+        if self.data_path is None:
+            raise ValueError("data_path must be specified")
         self.corpus_path = kwargs.get("corpus_path", f"{pathlib.Path().resolve()}\\corpus.txt")
         self.vocab_path = kwargs.get("vocab_path", f"{pathlib.Path().resolve()}\\vocab.txt")
         self.stop_words: list[str] = kwargs.get("stop_words", [''])

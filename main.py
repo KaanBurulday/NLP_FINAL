@@ -6,14 +6,14 @@ from tqdm import tqdm
 
 import TF_IDF
 import knn
-import StratifiedKFolds
+import StratifiedKFoldsKnn
 
 
 ##################### TF-IDF #####################
 start_time = time.time()
 assignment_data_path = f"{pathlib.Path().resolve()}\\makaleler-yazarlar"
-create_tf_idf_table_to_path = f"{pathlib.Path().resolve()}\\TF_IDF_Table.csv"
-create_tf_idf_table = True # If you want to recreate the tf idf table, make it True
+create_tf_idf_table_to_path = f"{pathlib.Path().resolve()}\\TF_IDF_Table.parquet"
+create_tf_idf_table = False # If you want to recreate the tf idf table, make it True
 
 use_nltk = False # To use BPE make this False
 use_files = True
@@ -50,7 +50,7 @@ if create_tf_idf_table:
     tf_idf = TF_IDF.TF_IDF(**TF_IDF_config)
     tf_idf.create_tf_idf_table((use_files, file_recreate), use_nltk)
 
-tf_idf_table = pd.read_csv(create_tf_idf_table_to_path)
+tf_idf_table = pd.read_parquet(create_tf_idf_table_to_path)
 print(tf_idf_table)
 
 print(f"\nTF-IDF Table Creation Duration:{time.time() - start_time}s")
@@ -106,13 +106,13 @@ StratifiedKFolds_config = {
     "use_numpy": use_numpy
 }
 
-SK_Folder = StratifiedKFolds.StratifiedKFolds(**StratifiedKFolds_config)
+SK_Folder = StratifiedKFoldsKnn.StratifiedKFoldsKnn(**StratifiedKFolds_config)
 folds = SK_Folder.create_folds()
 
 print(f"Starting Pre-Calculation Phase.")
 pre_calculation_start_time = time.time()
 precalculated_cosine_distances = SK_Folder.calculate_cosine_similarities_optimized()
-precalculated_euclidean_distances = SK_Folder.calculate_cosine_similarities_optimized()
+#precalculated_euclidean_distances = SK_Folder.calculate_euclidean_distances_optimized()
 duration_pre_calculation = time.time() - pre_calculation_start_time
 print(f"Pre-Calculation Duration: {duration_pre_calculation:.2f}s")
 
@@ -133,19 +133,19 @@ for i in tqdm(range(knn_k), desc="Evaluating k-NN for different k values"):
     else:
         results_table_cs.to_csv(f"Result_Table_BPE_CS_K_{k}.csv", index=False)
 
-    # Euclidean Distance
-    start_time = time.time()
-    sk_results_euc = SK_Folder.stratified_cross_validation_parallel(
-        folds=folds, k=k, knn_function=knn.classify_with_euclidean, precomputed_distances=precalculated_euclidean_distances
-    )
-    duration_euc = time.time() - start_time
-    print(f"Euclidean Distance | K: {k}, Duration: {duration_euc:.2f}s")
-
-    results_table_euc = create_results_table(sk_results_euc)
-    if use_nltk:
-        results_table_euc.to_csv(f"Result_Table_NLTK_Euc_K_{k}.csv", index=False)
-    else:
-        results_table_euc.to_csv(f"Result_Table_BPE_Euc_K_{k}.csv", index=False)
+    # # Euclidean Distance
+    # start_time = time.time()
+    # sk_results_euc = SK_Folder.stratified_cross_validation_parallel(
+    #     folds=folds, k=k, knn_function=knn.classify_with_euclidean, precomputed_distances=precalculated_euclidean_distances
+    # )
+    # duration_euc = time.time() - start_time
+    # print(f"Euclidean Distance | K: {k}, Duration: {duration_euc:.2f}s")
+    #
+    # results_table_euc = create_results_table(sk_results_euc)
+    # if use_nltk:
+    #     results_table_euc.to_parquet(f"Result_Table_NLTK_Euc_K_{k}.csv", index=False)
+    # else:
+    #     results_table_euc.to_parquet(f"Result_Table_BPE_Euc_K_{k}.csv", index=False)
 
 # for i in range(knn_k):
 #     sk_results = SK_Folder.stratified_cross_validation_parallel(folds=folds, k=i+1, knn_function = knn.classify_with_cs)
