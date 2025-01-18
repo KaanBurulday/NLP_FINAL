@@ -2,13 +2,10 @@ import pathlib
 import time
 from pstats import SortKey
 
-import pandas
-
 from FoldCreator import FoldCreator
 from TF_IDF_V2 import TF_IDF
 
 assignment_data_path = f"{pathlib.Path().resolve()}\\makaleler-yazarlar"
-#assignment_data_path = f"{pathlib.Path().resolve()}\\raw_texts"
 turkish_stopwords = [
     "acaba", "ama", "ancak", "aslında", "az", "bazı", "belki", "biri", "birkaç", "birşey",
     "biz", "bu", "çok", "çünkü", "da", "daha", "de", "defa", "diye", "eğer", "en", "gibi",

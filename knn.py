@@ -1,6 +1,7 @@
 import heapq
 import random
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import numpy as np
 import pandas as pd
@@ -17,29 +18,69 @@ def calculate_distances_between_test_and_train(train_data: DataFrame, test_data:
     :return:
     Will return the distances between train and test data.
     """
-    train_np = train_data.to_numpy()
-    test_np = test_data.to_numpy()
-    tf_idf_table = pd.read_parquet(tf_idf_table_path).to_numpy()
+    train_np = train_data.reset_index().to_numpy()
+    test_np = test_data.reset_index().to_numpy()
+    tf_idf_table = pd.read_parquet(tf_idf_table_path).reset_index().to_numpy()
 
     print(tf_idf_table)
 
-    magnitudes = {}
+    # magnitudes = []
+    # for row in tf_idf_table:
+    #     magnitudes.append(np.linalg.norm(row[1:-1]))
+    # np_magnitudes = np.array(magnitudes)
+    magnitudes = np.zeros(shape=tf_idf_table.shape[0])
     for row in tf_idf_table:
-        magnitudes[row[0]] = np.linalg.norm(row[1:-1])
-
-    print(magnitudes)
+        magnitudes[int(row[0])] = np.linalg.norm(row[1:-1])
 
     distances = {}
     for test_row in test_np:
-        print(type(test_row))
-        print(test_row[0])
         for train_row in train_np:
-            distances[f"{test_row[0]}-{train_row[0]}"] = precomputed_distance_cs_numpy(tf_idf_table[test_row[0]][1:-1],
-                                                                                       tf_idf_table[train_row[0]][1:-1],
-                                                                                       magnitudes[test_row[0]],
-                                                                                       magnitudes[train_row[0]])
+            distances[f"{test_row[0]}-{train_row[0]}"] = precomputed_distance_cs_numpy(tf_idf_table[int(test_row[0])][1:-1],
+                                                                                       tf_idf_table[int(train_row[0])][1:-1],
+                                                                                       magnitudes[int(test_row[0])],
+                                                                                       magnitudes[int(train_row[0])])
+        print(f"{test_row[0]} finished")
+    return distances
 
-    return np.ndarray(distances)
+def calculate_distances_between_test_and_train_mt(train_data: pd.DataFrame, test_data: pd.DataFrame, tf_idf_table_path: str):
+    """
+    :param train_data: Training data DataFrame.
+    :param test_data: Test data DataFrame.
+    :param tf_idf_table_path: Path to the TF-IDF table file in Parquet format.
+    :return: A dictionary containing distances between test and train data.
+    """
+    train_np = train_data.reset_index().to_numpy()
+    test_np = test_data.reset_index().to_numpy()
+    tf_idf_table = pd.read_parquet(tf_idf_table_path).reset_index().to_numpy()
+
+    # Compute magnitudes for TF-IDF vectors
+    magnitudes = np.zeros(shape=tf_idf_table.shape[0])
+    for row in tf_idf_table:
+        magnitudes[int(row[0])] = np.linalg.norm(row[1:-1])
+
+    # Define a function to compute distances for a single test-train pair
+    def compute_distance(test_row, train_row):
+        test_index, train_index = test_row[0], train_row[0]
+        test_vector = tf_idf_table[int(test_index)][1:-1]
+        train_vector = tf_idf_table[int(train_index)][1:-1]
+        distance = precomputed_distance_cs_numpy(test_vector, train_vector,
+                                                  magnitudes[int(test_index)],
+                                                  magnitudes[int(train_index)])
+        return f"{test_index}-{train_index}", distance
+
+    # Use ThreadPoolExecutor to parallelize distance computations
+    distances = {}
+    with ThreadPoolExecutor(max_workers=6) as executor:
+        futures = [
+            executor.submit(compute_distance, test_row, train_row)
+            for test_row in test_np
+            for train_row in train_np
+        ]
+        for future in as_completed(futures):
+            pair, distance = future.result()
+            distances[pair] = distance
+
+    return distances
 
 
 def classify_with_cs(n: int, data: DataFrame, test_sample: Series, use_numpy: bool, precomputed_distances: dict = None):

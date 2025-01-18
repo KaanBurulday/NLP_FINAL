@@ -2,7 +2,7 @@ import math
 import numpy as np
 from pandas import Series
 
-def precomputed_distance_cs_numpy(A: np.ndarray, B: np.ndarray, magA: float, magB: float) -> float:
+def precomputed_distance_cs_numpy(A: np.ndarray, B: np.ndarray, magA, magB) -> float:
     if magA == 0 or magB == 0:
         return 0
     return np.dot(A, B) / (magA * magB)

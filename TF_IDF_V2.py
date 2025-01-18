@@ -73,9 +73,9 @@ class TF_IDF:
     def initialize_documents(self):
         # to keep track of the document names, commented out due to some performance hits with stratified k-folds algorithm
         for row in self.data:
-            self.documents[f"Doc{row[0]}"] = {"terms": {}, "term_count": 0,
+            self.documents[f"{row[0]}"] = {"terms": {}, "term_count": 0,
                                            "class": row[-1]}
-            self.tf_idf_table[f"Doc{row[0]}"] = {}
+            self.tf_idf_table[f"{row[0]}"] = {}
 
     def get_total_text(self):
         total_text = ""
@@ -141,8 +141,8 @@ class TF_IDF:
                     if self.total_term_counter[word] == 0:
                         self.total_term_counter[word] += 1
             for term in term_counter:
-                self.documents[f"Doc{row[0]}"]["terms"][term] = term_counter[term]
-            self.documents[f"Doc{row[0]}"]["term_count"] = sum(term_counter.values())
+                self.documents[f"{row[0]}"]["terms"][term] = term_counter[term]
+            self.documents[f"{row[0]}"]["term_count"] = sum(term_counter.values())
 
 
     def fill_corpus_vocabulary_by_file(self):
@@ -204,7 +204,6 @@ class TF_IDF:
             self.tf_idf_table[document_name]["class"] = self.documents[document_name]["class"]
 
         df = pd.DataFrame.from_dict(self.tf_idf_table, orient='index')
-        df = df.loc[sorted_document_names]
         columns = [col for col in df.columns if col != 'class'] + ['class']
         df = df[columns]
         df.to_parquet(self.create_tf_idf_table_to_path, index=True)
