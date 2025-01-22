@@ -11,6 +11,10 @@ class StratifiedKFoldsCV:
         self.K = kwargs.get('K', 10)
 
 
+    def create_folds(self):
+        pass
+
+
 
 
 

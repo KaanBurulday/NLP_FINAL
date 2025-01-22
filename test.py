@@ -57,7 +57,8 @@ def test():
     df = tf_idf.create_tf_idf_table((True, True), True)
     df_np = df.to_numpy()
     print(df_np[0])
-    print(df.head(10))
+    print(df.head(51))
+    print(df.shape[0])
 
 cProfile.run('test()', 'profile_output')
 p = pstats.Stats('profile_output')

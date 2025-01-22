@@ -5,6 +5,7 @@ import pandas
 from pandas import DataFrame
 from TextSanitizer import sanitizer_string
 import os
+import pickle
 
 
 class FoldCreator:
@@ -132,6 +133,9 @@ class FoldCreator:
 
             train_fold.sort_index().to_csv(folds_root_path / f"{fold}" / f"train{fold}.csv", index=True)
             self.folds[fold].sort_index().to_csv(folds_root_path / f"{fold}" / f"test{fold}.csv")
+
+        # with open('folds.pkl', 'wb') as file:
+        #     pickle.dump(self.folds, file)
 
 
 

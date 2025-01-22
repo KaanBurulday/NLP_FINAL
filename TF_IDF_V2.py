@@ -199,7 +199,7 @@ class TF_IDF:
                 else:
                     tf = 0
                 idf = log10(self.total_number_of_documents / (1 + self.total_term_counter[term]))
-                tf_idf = tf * idf
+                tf_idf = round(tf * idf, 6)
                 self.tf_idf_table[document_name][term] = tf_idf
             self.tf_idf_table[document_name]["class"] = self.documents[document_name]["class"]
 
