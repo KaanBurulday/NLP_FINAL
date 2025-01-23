@@ -66,7 +66,7 @@ def calculate_distances_between_test_and_train_mt(train_data: np.ndarray, test_d
 
     # Use ThreadPoolExecutor to parallelize distance computations
     distances = {}
-    with ThreadPoolExecutor(max_workers=10) as executor:
+    with ThreadPoolExecutor(max_workers=6) as executor:
         futures = [
             executor.submit(compute_distance, test_row, train_row)
             for test_row in test_data
@@ -140,7 +140,7 @@ def calculate_distances_between_query_and_train_mt(train_data: np.ndarray, query
     distances = {}
     #total_tasks = len(train_data)
     #completed_tasks = 0
-    with ThreadPoolExecutor(max_workers=10) as executor:
+    with ThreadPoolExecutor(max_workers=6) as executor:
         futures = [
             executor.submit(compute_distance, query, train_row)
             for train_row in train_data

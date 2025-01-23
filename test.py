@@ -14,7 +14,7 @@ turkish_stopwords = [
     "sanki", "şey", "siz", "şu", "tüm", "ve", "veya", "ya", "yani"
 ]
 
-config = {
+folds_creator_config = {
     'data_base_path': assignment_data_path,
     'K': 10,
     'stop_words': turkish_stopwords,
@@ -38,12 +38,15 @@ TF_IDF_config = {
     "end_of_word_token": "_",
     "n": 10000,
     "show_bpe_counter": True,
+
+    "min_df": 0.005,
+    "max_df": 0.75
 }
 
 use_numpy = True
 start_time = time.time()
 
-fold_creator = FoldCreator(**config)
+fold_creator = FoldCreator(**folds_creator_config)
 fold_creator.save_folds()
 
 TF_IDF_config["data"] = fold_creator.data

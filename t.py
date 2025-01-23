@@ -48,7 +48,7 @@ tf_idf_table = pd.read_parquet(create_tf_idf_table_to_path).reset_index().to_num
 from knn import KNN
 
 knn_config = {
-    'k': 15,
+    'k': 10,
     'train_data': train_data_np,
     'tf_idf': tf_idf_table,
 }

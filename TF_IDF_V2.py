@@ -63,6 +63,9 @@ class TF_IDF:
                                                       f"{pathlib.Path().resolve()}\\TF_IDF_Table.csv")
         self.use_nltk_stemmer = kwargs.get("use_nltk_stemmer", False)
 
+        self.min_df = kwargs.get('min_df', 0.01)
+        self.max_df = kwargs.get('max_df', 0.8)
+
         self.vocabulary: list[str] = []
         self.corpus: list[str] = []
         self.documents = {}
@@ -133,17 +136,43 @@ class TF_IDF:
     def fill_terms_of_documents(self):
         corpus_set = set(self.corpus)
         for row in self.data:
+            document_frequency_incremented = set()
             term_counter = Counter()
             sanitized_text_list = sanitizer_string_list(row[1], self.stop_words, self.only_alpha, self.word_split_regex)
             for word in sanitized_text_list:
                 if word in corpus_set:
                     term_counter[word] += 1
-                    if self.total_term_counter[word] == 0:
+                    if word not in document_frequency_incremented:
                         self.total_term_counter[word] += 1
+                    document_frequency_incremented.add(word)
             for term in term_counter:
                 self.documents[f"{row[0]}"]["terms"][term] = term_counter[term]
             self.documents[f"{row[0]}"]["term_count"] = sum(term_counter.values())
 
+    def filter_terms(self):
+        corpus_set = set(self.corpus)
+        total_text = self.get_total_text().split()
+        term_counter = Counter()
+        for word in total_text:
+            if word in corpus_set:
+                term_counter[word] += 1
+
+        # Convert to absolute document counts
+        min_df_abs = self.min_df * self.total_number_of_documents
+        max_df_abs = self.max_df * self.total_number_of_documents
+        # print(self.min_df, self.max_df)
+        # print(min_df_abs, max_df_abs)
+
+        # Filter terms
+        filtered_terms = {term for term, df in term_counter.items() if min_df_abs <= df <= max_df_abs}
+
+        # Recalculate IDF for filtered terms
+        idf = {
+            term: log10(self.total_number_of_documents / (1 + term_counter[term]))
+            for term in filtered_terms
+        }
+
+        return idf
 
     def fill_corpus_vocabulary_by_file(self):
         with open(self.corpus_path, "r", encoding="utf-8") as file:
@@ -191,14 +220,20 @@ class TF_IDF:
 
         self.fill_terms_of_documents()
 
+        document_frequency = self.filter_terms()
+        # print(document_frequency.keys())
+        # print("-----------------------------------------------")
+        # print(self.min_df, self.max_df)
+
         sorted_document_names = sorted(self.documents.keys(), key=lambda x: x)
         for document_name in sorted_document_names:
-            for term in self.corpus:
+            for term in document_frequency.keys(): #self.corpus:
                 if term in self.documents[document_name]["terms"]:
                     tf = self.documents[document_name]["terms"][term] / self.documents[document_name]["term_count"]
                 else:
                     tf = 0
-                idf = log10(self.total_number_of_documents / (1 + self.total_term_counter[term]))
+                # idf = log10(self.total_number_of_documents / (1 + self.total_term_counter[term]))
+                idf = document_frequency[term]
                 tf_idf = round(tf * idf, 6)
                 self.tf_idf_table[document_name][term] = tf_idf
             self.tf_idf_table[document_name]["class"] = self.documents[document_name]["class"]

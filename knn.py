@@ -17,23 +17,39 @@ class KNN:
         self.train_data = kwargs.get('train_data', None)
         if self.train_data is None:
             raise Exception('train_data must not be None')
-        self.k = kwargs.get('k', 3)
-        self.tf_idf = kwargs.get('tf_idf', None)
-        if self.tf_idf is None:
-            raise Exception('tf_idf must not be None')
+        self.k = kwargs.get('k', 5)
+        self.tf_idf_table = kwargs.get('tf_idf_table', None)
+        if self.tf_idf_table is None:
+            raise Exception('tf_idf_table must not be None')
 
 
     def predict(self, query):
         method = DistanceCalculator.calculate_distances_between_query_and_train_mt
-        self.distances = method(train_data=self.train_data, query=query, tf_idf_table=self.tf_idf)
+        self.distances = method(train_data=self.train_data, query=query, tf_idf_table=self.tf_idf_table)
         top_k_neighbors = dict(sorted(self.distances.items(), key=lambda item: item[1][0], reverse=True)[:self.k])
         top_k_classes = [neighbor[1][1] for neighbor in top_k_neighbors.items()]
 
         predicted_label = max(set(top_k_classes), key=top_k_classes.count)
-        print(top_k_neighbors)
         return predicted_label
 
 
+    def predict_bulk(self, test_data):
+        predictions = []
+        actual = []
+        print(test_data)
+        for query in test_data:
+            method = DistanceCalculator.calculate_distances_between_query_and_train_mt
+            self.distances = method(train_data=self.train_data, query=query, tf_idf_table=self.tf_idf_table)
+            top_k_neighbors = dict(sorted(self.distances.items(), key=lambda item: item[1][0], reverse=True)[:self.k])
+            top_k_classes = [neighbor[1][1] for neighbor in top_k_neighbors.items()]
+
+            predicted_label = max(set(top_k_classes), key=top_k_classes.count)
+            predictions.append(predicted_label)
+            actual.append(query[-1])
+        return {
+            'predictions': predictions,
+            'actual': actual
+        }
 
 
 def classify_with_cs(n: int, data: DataFrame, test_sample: Series, use_numpy: bool, precomputed_distances: dict = None):

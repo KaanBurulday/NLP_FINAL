@@ -1,9 +1,9 @@
+import json
 import pathlib
 from collections import Counter
 from sklearn.model_selection import StratifiedKFold
 import pandas
 from pandas import DataFrame
-from TextSanitizer import sanitizer_string
 import os
 import pickle
 
@@ -13,14 +13,9 @@ class FoldCreator:
 
     def __init__(self, **kwargs):
         self.K = kwargs.get('K', 10)
-        self.data_base_path = kwargs.get('data_base_path', None)
-        if self.data_base_path is not None:
-            self.stop_words = kwargs.get('stop_words', None)
-            self.only_alpha = kwargs.get('only_alpha', True)
-            self.split_regex = kwargs.get('split_regex', ' ')
-            self.data = self.get_data()
-        else:
-            self.data = kwargs.get('data', None)
+        self.data = kwargs.get('data', None)
+        if self.data is None:
+            raise ValueError("Data must not be None!")
 
         self.folds = {}
 
@@ -64,23 +59,6 @@ class FoldCreator:
     #                                             split_regex=self.split_regex)
     #                     data.append({'text': text, 'class': folder})
     #     return DataFrame(data)
-
-    def get_data(self):
-        data = []
-        base_path = pathlib.Path(self.data_base_path)
-        for folder_path in base_path.iterdir():
-            if folder_path.is_dir():
-                for file_path in folder_path.iterdir():
-                    if file_path.is_file():
-                        with file_path.open('r') as f:
-                            text = sanitizer_string(
-                                text=f.read(),
-                                stop_words=self.stop_words,
-                                only_alpha=self.only_alpha,
-                                split_regex=self.split_regex
-                            )
-                            data.append({'text': text, 'class': folder_path.name})
-        return DataFrame(data)
 
     def get_data_count_per_fold(self):
         # Determine the amount of data will be in each fold
@@ -137,6 +115,15 @@ class FoldCreator:
         # with open('folds.pkl', 'wb') as file:
         #     pickle.dump(self.folds, file)
 
+    def save_folds_pkl(self):
+        folds_root_path = pathlib.Path().resolve() / "folds.pkl"
+        data_to_save = {key: value.to_dict() for key, value in self.folds.items()}
+        with open(folds_root_path, 'wb') as file:
+            pickle.dump(data_to_save, file)
 
-
+    def save_folds_json(self):
+        folds_root_path = pathlib.Path().resolve() / "folds.json"
+        data_to_save = {key: value.to_dict() for key, value in self.folds.items()}
+        with open(folds_root_path, 'w') as file:
+            json.dump(data_to_save, file)
 
