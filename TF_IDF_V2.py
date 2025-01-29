@@ -1,5 +1,8 @@
+import cProfile
 import pathlib
 import os
+import pstats
+import time
 from collections import Counter
 from math import log10
 import nltk
@@ -59,12 +62,13 @@ class TF_IDF:
         self.show_bpe_counter = kwargs.get("show_bpe_counter", True)
         self.make_corpus_unique = kwargs.get("make_corpus_unique", True)
 
-        self.create_tf_idf_table_to_path = kwargs.get("create_tf_idf_table_to_path",
-                                                      f"{pathlib.Path().resolve()}\\TF_IDF_Table.csv")
+        self.create_tf_idf_table_to_path = kwargs.get("tf_idf_table_to_path",
+                                                      f"{pathlib.Path().resolve()}\\TF_IDF_V2_Table.parquet")
         self.use_nltk_stemmer = kwargs.get("use_nltk_stemmer", False)
+        self.use_nltk_tokenizer = kwargs.get("use_nltk_tokenizer", True)
 
-        self.min_df = kwargs.get('min_df', 0.01)
-        self.max_df = kwargs.get('max_df', 0.8)
+        self.min_df = kwargs.get('min_df', 1)
+        self.max_df = kwargs.get('max_df', 1.00)
 
         self.vocabulary: list[str] = []
         self.corpus: list[str] = []
@@ -157,11 +161,18 @@ class TF_IDF:
             if word in corpus_set:
                 term_counter[word] += 1
 
-        # Convert to absolute document counts
-        min_df_abs = self.min_df * self.total_number_of_documents
-        max_df_abs = self.max_df * self.total_number_of_documents
-        # print(self.min_df, self.max_df)
-        # print(min_df_abs, max_df_abs)
+        min_df_abs = self.min_df
+        max_df_abs = self.max_df
+
+        if isinstance(self.min_df, int):
+            min_df_abs = self.min_df
+        elif isinstance(self.min_df, float):
+            min_df_abs = self.min_df * self.total_number_of_documents
+
+        if isinstance(self.max_df, int):
+            max_df_abs = self.max_df
+        elif isinstance(self.max_df, float):
+            max_df_abs = self.max_df * self.total_number_of_documents
 
         # Filter terms
         filtered_terms = {term for term, df in term_counter.items() if min_df_abs <= df <= max_df_abs}
@@ -198,14 +209,14 @@ class TF_IDF:
                 else:
                     file.write(f"{word}\n")
 
-    def create_tf_idf_table(self, use_files: (bool, bool), use_nltk: bool):
+    def create_tf_idf_table(self, use_files: (bool, bool)):
         """use_files: (true for using them, true for recreating them)"""
         self.initialize_documents()
 
         if use_files[0]:
-            if use_nltk:
+            if self.use_nltk_tokenizer:
                 self.create_tokens_with_nltk()
-            else:
+            else: # You can pass this else to avoid recreating tokens with BPE which takes a lot of time
                 self.create_corpus_vocabulary_bpe()
 
             if use_files[1] or (not isfile(self.corpus_path) or not isfile(self.vocab_path)):
@@ -213,7 +224,7 @@ class TF_IDF:
             else:
                 self.fill_corpus_vocabulary_by_file()
         else:
-            if use_nltk:
+            if self.use_nltk_tokenizer:
                 self.create_tokens_with_nltk()
             else:
                 self.create_corpus_vocabulary_bpe()
@@ -227,7 +238,7 @@ class TF_IDF:
 
         sorted_document_names = sorted(self.documents.keys(), key=lambda x: x)
         for document_name in sorted_document_names:
-            for term in document_frequency.keys(): #self.corpus:
+            for term in document_frequency.keys():  # self.corpus:
                 if term in self.documents[document_name]["terms"]:
                     tf = self.documents[document_name]["terms"][term] / self.documents[document_name]["term_count"]
                 else:
@@ -244,3 +255,58 @@ class TF_IDF:
         df.to_parquet(self.create_tf_idf_table_to_path, index=True)
 
         return df
+
+
+def create_tf_idf_table():
+    def get_data(data_base_path, stop_words, only_alpha, split_regex):
+        data = []
+        base_path = pathlib.Path(data_base_path)
+        for folder_path in base_path.iterdir():
+            if folder_path.is_dir():
+                for file_path in folder_path.iterdir():
+                    if file_path.is_file():
+                        with file_path.open('r') as f:
+                            text = sanitizer_string(
+                                text=f.read(),
+                                stop_words=stop_words,
+                                only_alpha=only_alpha,
+                                split_regex=split_regex
+                            )
+                            data.append({'text': text, 'class': folder_path.name})
+        return DataFrame(data)
+
+    assignment_data_path = f"{pathlib.Path().resolve()}\\{os.getenv('DATA_FOLDER_NAME')}"
+    create_tf_idf_table_to_path = f"{pathlib.Path().resolve()}\\TF_IDF_V2_Table.parquet"
+    turkish_stopwords = [
+        "acaba", "ama", "ancak", "aslında", "az", "bazı", "belki", "biri", "birkaç", "birşey",
+        "biz", "bu", "çok", "çünkü", "da", "daha", "de", "defa", "diye", "eğer", "en", "gibi",
+        "hem", "hep", "hepsi", "her", "hiç", "ile", "ise", "kez", "ki", "kim", "mı", "mu",
+        "mü", "nasıl", "ne", "neden", "nerde", "nerede", "nereye", "niçin", "niye", "o",
+        "sanki", "şey", "siz", "şu", "tüm", "ve", "veya", "ya", "yani"
+    ]
+    TF_IDF_config = {"data": get_data(data_base_path=assignment_data_path,
+                                      stop_words=turkish_stopwords,
+                                      only_alpha=True,
+                                      split_regex=' '), "tf_idf_table_to_path": create_tf_idf_table_to_path,
+                     "corpus_path": f"{pathlib.Path().resolve()}\\corpus.txt",
+                     "vocab_path": f"{pathlib.Path().resolve()}\\vocab.txt", "make_corpus_unique": True,
+                     "stop_words": turkish_stopwords, "word_split_regex": ' ', "only_alpha": True,
+                     "use_nltk_stemmer": False, "use_nltk_tokenizer": True, "end_of_word_token": "_", "n": 10000,
+                     "show_bpe_counter": True,
+                     "min_df": 0.001, "max_df": 0.55}
+
+    tf_idf = TF_IDF(**TF_IDF_config)
+    table = tf_idf.create_tf_idf_table((True, False))
+    print(table.head(10))
+
+
+def tf_idf_creation_run_with_profiler():
+    start_time = time.time()
+    profile_output_filename = 'profile_outputs\\tf_idf_profile_output'
+    cProfile.run('create_tf_idf_table()', profile_output_filename)
+    p = pstats.Stats(profile_output_filename)
+    p.sort_stats(pstats.SortKey.TIME).print_stats(10)
+
+    print("--- total duration: %s seconds ---" % (time.time() - start_time))
+
+# tf_idf_creation_run_with_profiler()

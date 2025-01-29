@@ -21,7 +21,7 @@ class FoldCreator:
 
         self.use_sklearn = kwargs.get('use_sklearn', True)
         if self.use_sklearn:
-            self.skf = StratifiedKFold(n_splits=10, shuffle=True)
+            self.skf = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
             X = self.data['text']
             y = self.data['class']
             for i, (train_index, test_index) in enumerate(self.skf.split(X, y)):

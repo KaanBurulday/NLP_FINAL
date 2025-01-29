@@ -160,3 +160,10 @@ cython_debug/
 #.idea/
 
 TF_IDF_Table.csv
+
+BERT_Models/*
+!BERT_Models/.gitignore
+
+RoBERTa_Models/*
+!RoBERTa_Models/.gitignore
+
